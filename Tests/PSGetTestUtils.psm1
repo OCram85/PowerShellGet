@@ -375,6 +375,11 @@ function Install-Nuget28
 {
     Remove-NuGetExe
 
+    $programDataExeDir = Split-Path $programDataExePath
+
+    if(-not (Test-Path $programDataExeDir)) {
+        New-Item -Path $programDataExeDir -Type Directory | Out-Null
+    }
     # Download outdated version 2.8.60717.93 of NuGet.exe from https://nuget.org/nuget.exe
     $null = Microsoft.PowerShell.Utility\Invoke-WebRequest -Uri 'https://go.microsoft.com/fwlink/?LinkID=690216&clcid=0x409' `
      -OutFile $programDataExePath
