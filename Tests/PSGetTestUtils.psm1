@@ -319,6 +319,23 @@ function Install-NuGetBinaries
     }
 }
 
+function Move-DotNet
+{
+    $DotnetCmd = Microsoft.PowerShell.Core\Get-Command -Name 'dotnet.exe' -All -ErrorAction Ignore -WarningAction SilentlyContinue 
+
+    if ($DotnetCmd -and $DotnetCmd.path) {
+        # Dotnet can be stored in multiple locations, so test each path
+        $DotnetCmd.path | ForEach-Object {
+            if (Test-Path -LiteralPath $_ -PathType Leaf) {
+                # if test-path is true, rename the particular path
+                $renamed_dotnetCmdPath = "$_.Renamed"
+                Remove-Item -Path $renamed_dotnetCmdPath -ErrorAction SilentlyContinue
+                Rename-Item -Path $_ -NewName $renamed_dotnetCmdPath
+            }
+        }
+    }
+}
+
 function Remove-NuGetExe
 {
     Install-NuGetBinaries
@@ -332,18 +349,7 @@ function Remove-NuGetExe
         Remove-Item -Path $script:ApplocalDataExePath -Force -Confirm:$false -WhatIf:$false
     }    
 
-    $DotnetCmd = Microsoft.PowerShell.Core\Get-Command -Name 'dotnet.exe' -All -ErrorAction Ignore -WarningAction SilentlyContinue 
-
-    if ($DotnetCmd -and $DotnetCmd.path) {
-        # Dotnet can be stored in multiple locations, so test each path
-        $DotnetCmd.path | ForEach-Object {
-            if (Test-Path -LiteralPath $_ -PathType Leaf) {
-                # if test-path is true, rename the particular path
-                $renamed_dotnetCmdPath = "$_.Renamed"
-                Rename-Item -Path $_ -NewName $renamed_dotnetCmdPath
-            }
-        }
-    }
+    Move-DotNet
 
     $script:NuGetExePath = $null
 
