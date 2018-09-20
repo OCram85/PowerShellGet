@@ -216,26 +216,13 @@ function GetAndSet-PSGetTestGalleryDetails
     }
 }
 
+
 function Install-NuGetBinaries
 {
     [cmdletbinding()]
     param()
 
-    # Look for renamed dotnet file
-    $dotnetrenamed = 'dotnet.exe.Renamed'
-    $DotnetCmdRenamed = Microsoft.PowerShell.Core\Get-Command -Name $dotnetrenamed -All -ErrorAction Ignore -WarningAction SilentlyContinue
-
-    # Reset name if the original dotnet command was renamed during the previous bootstrap tests.
-    if ($DotnetCmdRenamed.path -and (Test-Path -LiteralPath $DotnetCmdRenamed.path -PathType Leaf)) {
-        For ($count=0; $count -lt $DotnetCmdRenamed.Length; $count++) {
-            # Check every path in $script:DotnetCommandPath_Renamed is valid
-            # If test-path is true, rename the particular path back to the original name
-            if (Test-Path -LiteralPath $DotnetCmdRenamed.path[$count] -PathType Leaf) {
-                $originalDotnetCmd = $DotnetCmdRenamed.path[$count] -replace ".Renamed", ''
-                Rename-Item -Path $DotnetCmdRenamed.path[$count] -NewName $originalDotnetCmd
-            }
-        }
-    }
+    Restore-DotNet
 
     if($script:NuGetProvider -and 
        (($script:NuGetExePath -and (Microsoft.PowerShell.Management\Test-Path -Path $script:NuGetExePath)) -or
@@ -321,16 +308,65 @@ function Install-NuGetBinaries
 
 function Move-DotNet
 {
-    $DotnetCmd = Microsoft.PowerShell.Core\Get-Command -Name 'dotnet.exe' -All -ErrorAction Ignore -WarningAction SilentlyContinue 
+    # check $env:path
+    $DotnetCmd = @(Microsoft.PowerShell.Core\Get-Command -Name 'dotnet.exe' -All -ErrorAction Ignore -WarningAction SilentlyContinue) 
 
+    # and special paths where we might have a copy not on the regular path
+    $DotnetCommandAppDataPath = Microsoft.PowerShell.Management\Join-Path -Path $env:LocalAppData -ChildPath Microsoft |
+                    Microsoft.PowerShell.Management\Join-Path -ChildPath dotnet |
+                        Microsoft.PowerShell.Management\Join-Path -ChildPath dotnet.exe
+
+    $DotnetCmd += @(Microsoft.PowerShell.Core\Get-Command -Name $DotnetCommandAppDataPath -All -ErrorAction Ignore -WarningAction SilentlyContinue) 
+
+    $DotnetCommandProgramFilesPath = Microsoft.PowerShell.Management\Join-Path -Path $env:ProgramFiles -ChildPath dotnet |
+                        Microsoft.PowerShell.Management\Join-Path -ChildPath dotnet.exe
+    
+    $DotnetCmd += @(Microsoft.PowerShell.Core\Get-Command -Name $DotnetCommandProgramFilesPath -All -ErrorAction Ignore -WarningAction SilentlyContinue) 
+    
     if ($DotnetCmd -and $DotnetCmd.path) {
         # Dotnet can be stored in multiple locations, so test each path
         $DotnetCmd.path | ForEach-Object {
             if (Test-Path -LiteralPath $_ -PathType Leaf) {
+                Write-Debug "Moving dotnet executable $_ to $_.Renamed"
                 # if test-path is true, rename the particular path
                 $renamed_dotnetCmdPath = "$_.Renamed"
                 Remove-Item -Path $renamed_dotnetCmdPath -ErrorAction SilentlyContinue
                 Rename-Item -Path $_ -NewName $renamed_dotnetCmdPath
+            }
+        }
+    }
+}
+
+function Restore-DotNet
+{
+    # Look for renamed dotnet file in $env:path
+    $dotnetrenamed = 'dotnet.exe.Renamed'
+    $DotnetCmdRenamed = @(Microsoft.PowerShell.Core\Get-Command -Name $dotnetrenamed -All -ErrorAction Ignore -WarningAction SilentlyContinue)
+
+    # and special paths where we might have a copy not on the regular path
+    $DotnetCommandAppDataPath = Microsoft.PowerShell.Management\Join-Path -Path $env:LocalAppData -ChildPath Microsoft |
+                    Microsoft.PowerShell.Management\Join-Path -ChildPath dotnet |
+                        Microsoft.PowerShell.Management\Join-Path -ChildPath $dotnetrenamed
+
+    $DotnetCmdRenamed += @(Microsoft.PowerShell.Core\Get-Command -Name $DotnetCommandAppDataPath -All -ErrorAction Ignore -WarningAction SilentlyContinue) 
+
+    $DotnetCommandProgramFilesPath = Microsoft.PowerShell.Management\Join-Path -Path $env:ProgramFiles -ChildPath dotnet |
+                        Microsoft.PowerShell.Management\Join-Path -ChildPath $dotnetrenamed
+    
+    $DotnetCmdRenamed += @(Microsoft.PowerShell.Core\Get-Command -Name $DotnetCommandProgramFilesPath -All -ErrorAction Ignore -WarningAction SilentlyContinue) 
+    
+    if ($DotnetCmdRenamed -and $DotnetCmdRenamed.path) {
+        # Reset name if the original dotnet command was renamed during the previous bootstrap tests.
+        $DotnetCmdRenamed.path | ForEach-Object {
+            if (Test-Path -LiteralPath $_ -PathType Leaf) {
+                # Check every path in $script:DotnetCommandPath_Renamed is valid
+                # If test-path is true, rename the particular path back to the original name
+                $renamed =  $_
+                $originalDotnetCmd = $renamed -replace ".Renamed", ''
+                
+                Write-Debug "Moving $renamed back to $originalDotNetCmd"
+                Remove-Item -Path $originalDotNetCmd -ErrorAction SilentlyContinue
+                Rename-Item -Path $renamed -NewName $originalDotnetCmd
             }
         }
     }
