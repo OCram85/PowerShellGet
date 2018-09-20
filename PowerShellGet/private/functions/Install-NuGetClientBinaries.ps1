@@ -23,12 +23,14 @@ function Install-NuGetClientBinaries
         $Force
     )
 
+    Write-Debug "Install-NugetClientBinaries -BootstrapNugetExe $BootstrapNuGetExe -Proxy $Proxy -ProxyCredential $ProxyCredential -Force $Force"
     if ($script:NuGetProvider -and
         ($script:NuGetExeVersion -and ($script:NuGetExeVersion -ge $script:NuGetExeMinRequiredVersion))   -and
          (-not $BootstrapNuGetExe -or
          (($script:NuGetExePath -and (Microsoft.PowerShell.Management\Test-Path -Path $script:NuGetExePath)) -or
           ($script:DotnetCommandPath -and (Microsoft.PowerShell.Management\Test-Path -Path $script:DotnetCommandPath)))))
     {
+        Write-Debug "Skipping Client Binary installation: everything up-to-date"
         return
     }
 
@@ -84,6 +86,7 @@ function Install-NuGetClientBinaries
 
     if($script:IsWindows -and -not $script:IsNanoServer) {
 
+        Write-Debug "Checking nuget.exe: BootstrapNugetExe $BootstrapNuGetExe NugetExePath $script:NugetExePath Version $script:NugetExeVersion"
         if($BootstrapNuGetExe -and 
         (-not $script:NuGetExePath -or
             -not (Microsoft.PowerShell.Management\Test-Path -Path $script:NuGetExePath)) -or 
@@ -120,6 +123,8 @@ function Install-NuGetClientBinaries
                 }
             }
 
+            Write-Debug "NugetExePath is $NugetExePath"
+
             if ($NugetExePath -and (Microsoft.PowerShell.Management\Test-Path -Path $NugetExePath)) {
                 $script:NuGetExePath = $NugetExePath
                 $script:NuGetExeVersion = (Get-Command $script:NuGetExePath).FileVersionInfo.FileVersion
@@ -138,6 +143,7 @@ function Install-NuGetClientBinaries
         }
     }
 
+    Write-Debug "BootstrapNugetExe: $BootstrapNugetExe"
 
     if($BootstrapNuGetExe) {
         $DotnetCmd = Microsoft.PowerShell.Core\Get-Command -Name $script:DotnetCommandName -ErrorAction Ignore -WarningAction SilentlyContinue |
@@ -173,6 +179,8 @@ function Install-NuGetClientBinaries
         }
     }
 
+    Write-Debug "DotNetCommandPath: $DotNetCommandPath BootstrapNugetExe: $BootstrapNugetExe"
+
     # On non-Windows, dotnet should be installed by the user, throw an error if dotnet is not found using above logic.
     if ($BootstrapNuGetExe -and (-not $script:IsWindows -or $script:IsNanoServer)) {
         $ThrowError_params = @{
@@ -189,6 +197,7 @@ function Install-NuGetClientBinaries
 
     if(-not $bootstrapNuGetProvider -and -not $BootstrapNuGetExe)
     {
+        Write-Debug "Nothing to bootstrap, returning"
         return
     }
 
