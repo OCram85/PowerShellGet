@@ -1107,21 +1107,21 @@ function Uninstall-Module
         $Name    
     )
 
-    Get-Module $Name -ListAvailable | %{ 
+    Get-Module $Name -ListAvailable | % { 
             
-            Remove-Module $_ -Force -ErrorAction SilentlyContinue; 
-            
-            # Check if the module got installed with SxS version feature on PS 5.0 or later.
-            if($_.ModuleBase.EndsWith("$($_.Version)", [System.StringComparison]::OrdinalIgnoreCase))
-            {
-                $ParentDir = Split-Path -Path $_.ModuleBase -Parent -WarningAction SilentlyContinue
-                Remove-item $ParentDir -Recurse -Force -WarningAction SilentlyContinue -ErrorAction SilentlyContinue
-            }
-            else
-            {
-                Remove-item $_.ModuleBase -Recurse -Force -WarningAction SilentlyContinue -ErrorAction SilentlyContinue
-            }
+        Remove-Module $_ -Force -ErrorAction SilentlyContinue; 
+        
+        # Check if the module got installed with SxS version feature on PS 5.0 or later.
+        if($_.ModuleBase.EndsWith("$($_.Version)", [System.StringComparison]::OrdinalIgnoreCase))
+        {
+            $ParentDir = Split-Path -Path $_.ModuleBase -Parent -WarningAction SilentlyContinue
+            Remove-item $ParentDir -Recurse -Force -WarningAction SilentlyContinue -ErrorAction SilentlyContinue
         }
+        else
+        {
+            Remove-item $_.ModuleBase -Recurse -Force -WarningAction SilentlyContinue -ErrorAction SilentlyContinue
+        }
+    }
 }
 
 function RemoveItem
