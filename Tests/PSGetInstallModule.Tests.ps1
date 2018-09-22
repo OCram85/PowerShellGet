@@ -138,15 +138,18 @@ function SuiteCleanup {
     if($script:IsWindowsOS)
     {
         # Delete the user
-        net user $script:UserName /delete | Out-Null
-        # Delete the user profile
-        # run only if cmd is available
-        if(Get-Command -Name Get-WmiObject -ErrorAction SilentlyContinue)
+        if($script:UserName) 
         {
-            $userProfile = (Get-WmiObject -Class Win32_UserProfile | Where-Object {$_.LocalPath -match $script:UserName})
-            if($userProfile)
+            net user $script:UserName /delete | Out-Null
+            # Delete the user profile
+            # run only if cmd is available
+            if(Get-Command -Name Get-WmiObject -ErrorAction SilentlyContinue)
             {
-                RemoveItem $userProfile.LocalPath
+                $userProfile = (Get-WmiObject -Class Win32_UserProfile | Where-Object {$_.LocalPath -match $script:UserName})
+                if($userProfile)
+                {
+                    RemoveItem $userProfile.LocalPath
+                }
             }
         }
     }
@@ -170,6 +173,7 @@ Describe PowerShell.PSGet.InstallModuleTests -Tags 'BVT','InnerLoop' {
         PSGetTestUtils\Uninstall-Module ContosoServer
         PSGetTestUtils\Uninstall-Module ContosoClient
         PSGetTestUtils\Uninstall-Module DscTestModule
+        PSGetTestUtils\Uninstall-Module SmallContosoServer
     }
 
     # Purpose: InstallNotAvailableModuleWithWildCard
