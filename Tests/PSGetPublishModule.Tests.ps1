@@ -107,6 +107,71 @@ Describe PowerShell.PSGet.PublishModuleTests -Tags 'BVT','InnerLoop' {
         RemoveItem "$script:PublishModuleBase\*"
     }
 
+
+    # Purpose: Validate that Publish-Module to prompts to upgrade NuGet.exe if local NuGet.exe file is less than minimum required version
+    #
+    # Action: Publish-Module
+    #
+    # Expected Result: Publish operation should succeed, NuGet.exe should upgrade to latest version
+    #
+    It PublishModuleUpgradeNugetExeAndYesToPrompt {
+        try {
+            $script:NuGetExeName = 'NuGet.exe'
+            $script:PSGetProgramDataPath = Microsoft.PowerShell.Management\Join-Path -Path $env:ProgramData -ChildPath 'Microsoft\Windows\PowerShell\PowerShellGet\'
+            $script:ProgramDataExePath = Microsoft.PowerShell.Management\Join-Path -Path $script:PSGetProgramDataPath -ChildPath $script:NuGetExeName
+
+            Install-NuGet28
+            Move-DotNet
+            # Re-import PowerShellGet module
+            $script:psgetModuleInfo = Import-Module PowerShellGet -Global -Force -Passthru
+            Import-LocalizedData  script:LocalizedData -filename PSGet.Resource.psd1 -BaseDirectory $script:psgetModuleInfo.ModuleBase
+
+            # Install-OutdatedNugetExe saves NuGet.exe in $script:ProgramDataExePath
+            $oldNuGetExeVersion = [System.Version](Get-Command $script:ProgramDataExePath).FileVersionInfo.FileVersion
+            AssertEquals $oldNuGetExeVersion $script:OutdatedNuGetExeVersion "Outdated NuGet.exe version is $oldNuGetExeVersion when it should have been $script:OutdatedNuGetExeVersion."
+
+            $outputPath = $script:TempPath
+            $guid = [system.guid]::newguid().tostring()
+            $outputFilePath = Join-Path $outputPath "$guid"
+            $runspace = CreateRunSpace $outputFilePath 1
+
+            # 0 is mapped to YES in prompt
+            $Global:proxy.UI.ChoiceToMake = 0
+            $content = $null
+            $err = $null
+
+            try {
+                $result = ExecuteCommand $runspace "Publish-Module -Name $script:PublishModuleName"
+            }
+            catch {
+                $err = $_
+            }
+            finally {
+                $fileName = "PromptForChoice-0.txt"
+                $path = join-path $outputFilePath $fileName
+                if (Test-Path $path) {
+                    $content = get-content $path
+                }
+
+                CloseRunSpace $runspace
+                RemoveItem $outputFilePath
+            }
+
+            AssertNull $result "$result"
+            Assert ($content -and ($content -match 'upgrade')) "Publish module confirm prompt is not working, $content."
+            Assert (test-path $script:ProgramDataExePath) "NuGet.exe did not install properly.  The file could not be found under path $script:PSGetProgramDataPath."
+
+            $currentNuGetExeVersion = [System.Version](Get-Command $script:ProgramDataExePath).FileVersionInfo.FileVersion
+            Assert ($currentNuGetExeVersion -gt $oldNuGetExeVersion) "Current NuGet.exe version is $currentNuGetExeVersion when it should have been greater than version $oldNuGetExeVersion."
+
+            $module = find-module $script:PublishModuleName -RequiredVersion $version
+            AssertEquals $module.Name $script:PublishModuleName "Module did not successfully publish. Module name was $($module.Name) when it should have been $script:PublishModuleName."
+        }
+        finally {
+            Install-NuGetBinaries
+        }
+    } -Skip:$($PSEdition -eq 'Core')
+
     # Purpose: Publish a module with -Name
     #
     # Action: Publish-Module -Name ContosoPublishModule -NuGetApiKey <ApiKey>
@@ -1051,6 +1116,7 @@ Describe PowerShell.PSGet.PublishModuleTests -Tags 'BVT','InnerLoop' {
             $script:ProgramDataExePath = Microsoft.PowerShell.Management\Join-Path -Path $script:PSGetProgramDataPath -ChildPath $script:NuGetExeName
 
             Install-NuGet28
+            Move-DotNet
             # Re-import PowerShellGet module
             $script:psgetModuleInfo = Import-Module PowerShellGet -Global -Force -Passthru
             Import-LocalizedData  script:LocalizedData -filename PSGet.Resource.psd1 -BaseDirectory $script:psgetModuleInfo.ModuleBase
@@ -1069,69 +1135,6 @@ Describe PowerShell.PSGet.PublishModuleTests -Tags 'BVT','InnerLoop' {
 
             AssertNull $err "$err"
             AssertNull $result "$result"
-            Assert (test-path $script:ProgramDataExePath) "NuGet.exe did not install properly.  The file could not be found under path $script:PSGetProgramDataPath."
-
-            $currentNuGetExeVersion = [System.Version](Get-Command $script:ProgramDataExePath).FileVersionInfo.FileVersion
-            Assert ($currentNuGetExeVersion -gt $oldNuGetExeVersion) "Current NuGet.exe version is $currentNuGetExeVersion when it should have been greater than version $oldNuGetExeVersion."
-
-            $module = find-module $script:PublishModuleName -RequiredVersion $version
-            AssertEquals $module.Name $script:PublishModuleName "Module did not successfully publish. Module name was $($module.Name) when it should have been $script:PublishModuleName."
-        }
-        finally {
-            Install-NuGetBinaries
-        }
-    } -Skip:$($PSEdition -eq 'Core')
-
-    # Purpose: Validate that Publish-Module to prompts to upgrade NuGet.exe if local NuGet.exe file is less than minimum required version
-    #
-    # Action: Publish-Module
-    #
-    # Expected Result: Publish operation should succeed, NuGet.exe should upgrade to latest version
-    #
-    It PublishModuleUpgradeNugetExeAndYesToPrompt {
-        try {
-            $script:NuGetExeName = 'NuGet.exe'
-            $script:PSGetProgramDataPath = Microsoft.PowerShell.Management\Join-Path -Path $env:ProgramData -ChildPath 'Microsoft\Windows\PowerShell\PowerShellGet\'
-            $script:ProgramDataExePath = Microsoft.PowerShell.Management\Join-Path -Path $script:PSGetProgramDataPath -ChildPath $script:NuGetExeName
-
-            Install-NuGet28
-            # Re-import PowerShellGet module
-            $script:psgetModuleInfo = Import-Module PowerShellGet -Global -Force -Passthru
-            Import-LocalizedData  script:LocalizedData -filename PSGet.Resource.psd1 -BaseDirectory $script:psgetModuleInfo.ModuleBase
-
-            # Install-OutdatedNugetExe saves NuGet.exe in $script:ProgramDataExePath
-            $oldNuGetExeVersion = [System.Version](Get-Command $script:ProgramDataExePath).FileVersionInfo.FileVersion
-            AssertEquals $oldNuGetExeVersion $script:OutdatedNuGetExeVersion "Outdated NuGet.exe version is $oldNuGetExeVersion when it should have been $script:OutdatedNuGetExeVersion."
-
-            $outputPath = $script:TempPath
-            $guid = [system.guid]::newguid().tostring()
-            $outputFilePath = Join-Path $outputPath "$guid"
-            $runspace = CreateRunSpace $outputFilePath 1
-
-            # 0 is mapped to YES in prompt
-            $Global:proxy.UI.ChoiceToMake = 0
-            $content = $null
-            $err = $null
-
-            try {
-                $result = ExecuteCommand $runspace "Publish-Module -Name $script:PublishModuleName"
-            }
-            catch {
-                $err = $_
-            }
-            finally {
-                $fileName = "PromptForChoice-0.txt"
-                $path = join-path $outputFilePath $fileName
-                if (Test-Path $path) {
-                    $content = get-content $path
-                }
-
-                CloseRunSpace $runspace
-                RemoveItem $outputFilePath
-            }
-
-            AssertNull $result "$result"
-            Assert ($content -and ($content -match 'upgrade')) "Publish module confirm prompt is not working, $content."
             Assert (test-path $script:ProgramDataExePath) "NuGet.exe did not install properly.  The file could not be found under path $script:PSGetProgramDataPath."
 
             $currentNuGetExeVersion = [System.Version](Get-Command $script:ProgramDataExePath).FileVersionInfo.FileVersion
@@ -1219,6 +1222,7 @@ Describe PowerShell.PSGet.PublishModuleTests -Tags 'BVT','InnerLoop' {
             $script:ProgramDataExePath = Microsoft.PowerShell.Management\Join-Path -Path $script:PSGetProgramDataPath -ChildPath $script:NuGetExeName
 
             Install-NuGet28
+            Move-DotNet
             # Re-import PowerShellGet module
             $script:psgetModuleInfo = Import-Module PowerShellGet -Global -Force -Passthru
             Import-LocalizedData  script:LocalizedData -filename PSGet.Resource.psd1 -BaseDirectory $script:psgetModuleInfo.ModuleBase
