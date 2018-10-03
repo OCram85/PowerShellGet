@@ -15,8 +15,8 @@
 #>
 
 function SuiteSetup {
-    Import-Module "$PSScriptRoot\PSGetTestUtils.psm1" -WarningAction SilentlyContinue
-    Import-Module "$PSScriptRoot\Asserts.psm1" -WarningAction SilentlyContinue
+    Import-Module "$PSScriptRoot\PSGetTestUtils.psm1" -Force -WarningAction SilentlyContinue
+    Import-Module "$PSScriptRoot\Asserts.psm1" -Force -WarningAction SilentlyContinue
 
     $script:IsWindowsOS = (-not (Get-Variable -Name IsWindows -ErrorAction Ignore)) -or $IsWindows
     $script:ProgramFilesScriptsPath = Get-AllUsersScriptsPath 

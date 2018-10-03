@@ -22,7 +22,7 @@ function RegisterTestRepository {
 #   Global Setup
 #------------------
 
-Import-Module "$PSScriptRoot\PSGetTestUtils.psm1" -WarningAction SilentlyContinue
+Import-Module "$PSScriptRoot\PSGetTestUtils.psm1" -Force -WarningAction SilentlyContinue
 
 $psgetModuleInfo = Import-Module PowerShellGet -Global -Force -Passthru
 Import-LocalizedData LocalizedData -Filename "PSGet.Resource.psd1" -BaseDirectory $psgetModuleInfo.ModuleBase

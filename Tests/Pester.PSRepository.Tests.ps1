@@ -2,7 +2,7 @@
 #
 # Copyright (c) Microsoft Corporation, 2016
 
-Import-Module "$PSScriptRoot\PSGetTestUtils.psm1" -WarningAction SilentlyContinue
+Import-Module "$PSScriptRoot\PSGetTestUtils.psm1" -Force -WarningAction SilentlyContinue
 
 $RepositoryName = 'PSGallery'
 $SourceLocation = 'https://www.poshtestgallery.com/api/v2/'

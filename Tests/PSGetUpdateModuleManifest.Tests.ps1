@@ -14,8 +14,8 @@
 Describe PowerShell.PSGet.UpdateModuleManifest -Tags 'BVT','InnerLoop' {
 
     BeforeAll {
-        Import-Module "$PSScriptRoot\PSGetTestUtils.psm1" -WarningAction SilentlyContinue
-        Import-Module "$PSScriptRoot\Asserts.psm1" -WarningAction SilentlyContinue
+        Import-Module "$PSScriptRoot\PSGetTestUtils.psm1" -Force -WarningAction SilentlyContinue
+        Import-Module "$PSScriptRoot\Asserts.psm1" -Force -WarningAction SilentlyContinue
         $script:TempPath = Get-TempPath
         $script:psgetModuleInfo = Import-Module PowerShellGet -Global -Force -Passthru
     }

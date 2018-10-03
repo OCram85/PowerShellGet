@@ -13,8 +13,8 @@
 Describe PowerShell.PSGet.PackageManagementIntegrationTests -Tags 'P1','OuterLoop' {
 
     BeforeAll {
-        Import-Module "$PSScriptRoot\PSGetTestUtils.psm1" -WarningAction SilentlyContinue
-        Import-Module "$PSScriptRoot\Asserts.psm1" -WarningAction SilentlyContinue
+        Import-Module "$PSScriptRoot\PSGetTestUtils.psm1" -Force -WarningAction SilentlyContinue
+        Import-Module "$PSScriptRoot\Asserts.psm1" -Force -WarningAction SilentlyContinue
 
         $script:PSModuleSourcesPath = Get-PSGetLocalAppDataPath
         $script:ProgramFilesModulesPath = Get-AllUsersModulesPath

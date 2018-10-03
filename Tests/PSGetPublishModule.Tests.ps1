@@ -19,8 +19,8 @@ if($IsMacOS) {
 }
 
 function SuiteSetup {
-    Import-Module "$PSScriptRoot\PSGetTestUtils.psm1" -WarningAction SilentlyContinue
-    Import-Module "$PSScriptRoot\Asserts.psm1" -WarningAction SilentlyContinue
+    Import-Module "$PSScriptRoot\PSGetTestUtils.psm1" -Force -WarningAction SilentlyContinue
+    Import-Module "$PSScriptRoot\Asserts.psm1" -Force -WarningAction SilentlyContinue
 
     $script:ProgramFilesModulesPath = Get-AllUsersModulesPath
     $script:MyDocumentsModulesPath = Get-CurrentUserModulesPath

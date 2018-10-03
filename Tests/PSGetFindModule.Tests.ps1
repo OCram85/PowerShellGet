@@ -18,8 +18,8 @@
 . "$PSScriptRoot\PSGetTests.Generators.ps1"
 
 function SuiteSetup {
-    Import-Module "$PSScriptRoot\PSGetTestUtils.psm1" -WarningAction SilentlyContinue
-    Import-Module "$PSScriptRoot\Asserts.psm1" -WarningAction SilentlyContinue
+    Import-Module "$PSScriptRoot\PSGetTestUtils.psm1" -Force -WarningAction SilentlyContinue
+    Import-Module "$PSScriptRoot\Asserts.psm1" -Force -WarningAction SilentlyContinue
 
     $script:MyDocumentsModulesPath = Get-CurrentUserModulesPath
     $script:PSGetLocalAppDataPath = Get-PSGetLocalAppDataPath
