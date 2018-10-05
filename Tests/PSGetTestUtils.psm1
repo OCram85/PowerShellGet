@@ -1108,7 +1108,6 @@ function Uninstall-Module
     )
 
     Get-Module $Name -ListAvailable | Foreach-Object { 
-            
         Remove-Module $_ -Force -ErrorAction SilentlyContinue; 
         
         # Check if the module got installed with SxS version feature on PS 5.0 or later.
